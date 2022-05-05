@@ -12,7 +12,7 @@ class PolynomialGetter:
         self._edges = edges
         self._start_vertex = start_vertex
         self._new_edges_list = []
-        self._weights = weights
+        self._weights = weights.copy()
         self._bernoulli_barnes = []
         self.init_bernoulli_barnes()
         self._size = 0
@@ -76,8 +76,6 @@ class PolynomialGetter:
                     self._size += 1
             for path in all_paths:
                 self._length = 0
-                print(all_subtrees[i])
-                print(path)
                 for j in range(1, len(path)):
                     diff = len(self._edges[path[j]]) - len(self._new_edges_list[path[j]])
                     self._length += self._weights[path[j]][path[j - 1]]
@@ -98,7 +96,7 @@ class PolynomialGetter:
                     self._size += 1
             for path in all_paths:
                 for j in range(1, len(path)):
-                    if len(self._new_edges_list[path[j]]) < 2:
+                    if len(self._new_edges_list[path[-1]]) < 2:
                         continue
                     rk_polynomial = self.init_rk_second(path, path[j - 1], path[j])
                     polynomial += rk_polynomial
