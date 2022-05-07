@@ -37,9 +37,9 @@ class OkButton(QPushButton):
                 self.show_polynomials()
 
     def show_polynomials(self):
-        getter = PolynomialGetter(self.visitor.edges, self.visitor.start_vertex, self.visitor.weights)
-        getter.get()
-        getter.write_file()
+        getter = PolynomialGetter(self.visitor.edges, self.visitor.start_vertex, self.visitor.weights.copy())
+        #getter.get()
+        #getter.write_file()
         getter.set_ones()
         getter.get()
         svg = QSvgWidget()

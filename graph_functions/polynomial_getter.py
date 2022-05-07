@@ -42,13 +42,9 @@ class PolynomialGetter:
                     pos += 1
         return rk
 
-    def init_rk_second(self, path, first, second):
+    def init_rk_second(self, first, second):
         rk = self._bernoulli_barnes[self._size - 2]
-        sum_of_lengths = 0
-        for i in range(1, len(path) - 1):
-            sum_of_lengths += self._weights[path[i]][path[i - 1]]
-        sum_of_lengths -= self._weights[first][second]
-        rk = rk.subs(Symbol("lambda"), (Symbol("T") + sum_of_lengths))
+        rk = rk.subs(Symbol("lambda"), (Symbol("T") + self._length))
         pos = 1
         for u in range(len(self._new_edges_list)):
             for v in self._new_edges_list[u]:
@@ -77,10 +73,14 @@ class PolynomialGetter:
             for path in all_paths:
                 self._length = 0
                 for j in range(1, len(path)):
-                    diff = len(self._edges[path[j]]) - len(self._new_edges_list[path[j]])
                     self._length += self._weights[path[j]][path[j - 1]]
-                    rk_polynomial = self.init_rk_first()
-                    polynomial += diff * rk_polynomial
+                diff = len(self._edges[path[-1]]) - len(self._new_edges_list[path[-1]])
+                rk_polynomial = self.init_rk_first()
+                if self._size == 5:
+                    print(path)
+                    a = sympy.Poly(diff * rk_polynomial, Symbol("T"))
+                    print(a.all_coeffs())
+                polynomial += diff * rk_polynomial
         self._polynomial_first = sympy.simplify(polynomial)
 
     def get_second(self):
@@ -95,11 +95,14 @@ class PolynomialGetter:
                 if vertex:
                     self._size += 1
             for path in all_paths:
-                for j in range(1, len(path)):
-                    if len(self._new_edges_list[path[-1]]) < 2:
-                        continue
-                    rk_polynomial = self.init_rk_second(path, path[j - 1], path[j])
-                    polynomial += rk_polynomial
+                if len(path) < 2 or len(self._new_edges_list[path[-1]]) < 2:
+                    continue
+                self._length = 0
+                for j in range(1, len(path) - 1):
+                    self._length += self._weights[path[j]][path[j - 1]]
+                self._length -= self._weights[path[-1]][path[-2]]
+                rk_polynomial = self.init_rk_second(path[-1], path[-2])
+                polynomial += rk_polynomial
         self._polynomial_second = sympy.simplify(polynomial)
 
     def get(self):
