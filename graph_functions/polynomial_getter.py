@@ -13,7 +13,7 @@ class PolynomialGetter:
         self._start_vertex = start_vertex
         self._new_edges_list = []
         self._weights = weights.copy()
-        self._bernoulli_barnes = []
+        self._barnes_bernoulli = []
         self.init_bernoulli_barnes()
         self._size = 0
         self._length = 0
@@ -23,7 +23,7 @@ class PolynomialGetter:
 
     def init_bernoulli_barnes(self):
         for i in range(len(self._edges) + 1):
-            self._bernoulli_barnes.append(get_rk(i))
+            self._barnes_bernoulli.append(get_rk(i))
 
     def set_ones(self):
         for i in range(len(self._weights)):
@@ -31,8 +31,8 @@ class PolynomialGetter:
                 if self._weights[i][j] > 0:
                     self._weights[i][j] = 1
 
-    def init_rk_first(self):
-        rk = self._bernoulli_barnes[self._size - 1]
+    def _init_rk_first(self):
+        rk = self._barnes_bernoulli[self._size - 1]
         rk = rk.subs(Symbol("lambda"), (Symbol("T") + self._length))
         pos = 1
         for u in range(len(self._new_edges_list)):
@@ -42,8 +42,8 @@ class PolynomialGetter:
                     pos += 1
         return rk
 
-    def init_rk_second(self, first, second):
-        rk = self._bernoulli_barnes[self._size - 2]
+    def _init_rk_second(self, first, second):
+        rk = self._barnes_bernoulli[self._size - 2]
         rk = rk.subs(Symbol("lambda"), (Symbol("T") + self._length))
         pos = 1
         for u in range(len(self._new_edges_list)):
@@ -54,7 +54,8 @@ class PolynomialGetter:
         return rk
 
     def write_file(self):
-        path = os.path.abspath(os.curdir) + "\\latex.txt"
+        path = os.path.abspath(os.curdir) + "/latex.txt"
+        print(path)
         f = open(path, "w")
         f.write(latex(self.polynomial_result))
         f.close()
@@ -75,11 +76,7 @@ class PolynomialGetter:
                 for j in range(1, len(path)):
                     self._length += self._weights[path[j]][path[j - 1]]
                 diff = len(self._edges[path[-1]]) - len(self._new_edges_list[path[-1]])
-                rk_polynomial = self.init_rk_first()
-                if self._size == 5:
-                    print(path)
-                    a = sympy.Poly(diff * rk_polynomial, Symbol("T"))
-                    print(a.all_coeffs())
+                rk_polynomial = self._init_rk_first()
                 polynomial += diff * rk_polynomial
         self._polynomial_first = sympy.simplify(polynomial)
 
@@ -101,7 +98,7 @@ class PolynomialGetter:
                 for j in range(1, len(path) - 1):
                     self._length += self._weights[path[j]][path[j - 1]]
                 self._length -= self._weights[path[-1]][path[-2]]
-                rk_polynomial = self.init_rk_second(path[-1], path[-2])
+                rk_polynomial = self._init_rk_second(path[-1], path[-2])
                 polynomial += rk_polynomial
         self._polynomial_second = sympy.simplify(polynomial)
 
@@ -110,3 +107,7 @@ class PolynomialGetter:
         self.get_second()
         self.polynomial_result = sympy.simplify(self._polynomial_first + self._polynomial_second)
         self.polynomial_result = sympy.collect(self.polynomial_result, Symbol("T"))
+        a = sympy.Poly(self.polynomial_result, Symbol("T"))
+        self.polynomial_result -= a.coeffs()[-1]
+        self.polynomial_result += 1
+

@@ -8,55 +8,55 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from sympy import latex
 
 from graph_functions.polynomial_getter import PolynomialGetter
-from graph_functions.settings import *
+from graph_functions.supporting import *
 
 
 class OkButton(QPushButton):
     def __init__(self, dialog, widget):
         super().__init__(widget)
-        self.setupUi()
+        self.setup_ui()
         self.dialog = dialog
         self.widget = widget
-        self.visitor = None
+        self.settings = None
 
-    def set_visitor(self, visitor):
-        self.visitor = visitor
+    def set_settings(self, settings):
+        self.settings = settings
 
-    def setupUi(self):
+    def setup_ui(self):
         self.setGeometry(QtCore.QRect(100, 160, 101, 31))
         self.setObjectName("pushButton")
 
     def mousePressEvent(self, e):
         if check_int(self.dialog.lineEdit.text()):
             if self.dialog.type:
-                self.visitor.current_weight = int(self.dialog.lineEdit.text())
+                self.settings.current_weight = int(self.dialog.lineEdit.text())
                 self.widget.hide()
             else:
-                self.visitor.start_vertex = int(self.dialog.lineEdit.text())
+                self.settings.start_vertex = int(self.dialog.lineEdit.text())
                 self.widget.hide()
                 self.show_polynomials()
 
     def show_polynomials(self):
-        getter = PolynomialGetter(self.visitor.edges, self.visitor.start_vertex, self.visitor.weights.copy())
-        #getter.get()
-        #getter.write_file()
+        getter = PolynomialGetter(self.settings.edges, self.settings.start_vertex, self.settings.weights.copy())
+        getter.get()
+        getter.write_file()
         getter.set_ones()
         getter.get()
         svg = QSvgWidget()
         svg.load(tex2svg(to_raw(latex(getter.polynomial_result))))
-        svg.setWindowTitle("Edges weights equal 1")
+        svg.setWindowTitle("Output")
         svg.show()
 
 
-class Ui_Dialog(object):
-    def __init__(self, visitor):
+class UiDialog(object):
+    def __init__(self, settings):
         self.lineEdit = None
         self.pushButton = None
         self.label = None
         self.type = None
-        self.visitor = visitor
+        self.settings = settings
 
-    def setupUi(self, Dialog):
+    def setup_ui(self, Dialog):
         Dialog.setObjectName("Ввод")
         Dialog.resize(300, 200)
         Dialog.setMinimumSize(QtCore.QSize(300, 200))
@@ -65,19 +65,19 @@ class Ui_Dialog(object):
         self.lineEdit.setGeometry(QtCore.QRect(50, 100, 200, 25))
         self.lineEdit.setObjectName("lineEdit")
         self.label = QtWidgets.QLabel(Dialog)
-        self.label.setGeometry(QtCore.QRect(45, 40, 200, 41))
+        self.label.setGeometry(QtCore.QRect(25, 40, 250, 41))
         self.label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.label.setObjectName("label")
         self.pushButton = OkButton(self, Dialog)
-        self.pushButton.set_visitor(self.visitor)
+        self.pushButton.set_settings(self.settings)
 
-        self.retranslateUi(Dialog)
+        self._retranslate_ui(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
     def set_type(self, type_of_dialog):
         self.type = type_of_dialog
 
-    def retranslateUi(self, Dialog):
+    def _retranslate_ui(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Ввод"))
         if self.type:
@@ -88,7 +88,7 @@ class Ui_Dialog(object):
         self.pushButton.setText(_translate("Dialog", "OK"))
 
 
-class TextLabel(QLabel):
+class VertexLabel(QLabel):
     def __init__(self, widget, num):
         super().__init__(widget)
         self.setGeometry(QtCore.QRect(45, 10, 50, 50))
@@ -127,49 +127,49 @@ class Vertex(QLabel):
         self.number = 0
         self.text = None
         self.pos = None
-        self.setTextLabel()
+        self.set_text_label()
 
     def set_location(self, x, y):
         self.setGeometry(QtCore.QRect(x - 49, y - 35, 80, 70))
 
     def mousePressEvent(self, event):
-        self.visitor.do(self)
+        self.visitor.add_to_pressed(self)
 
-    def setTextLabel(self):
+    def set_text_label(self):
         self.number = self.visitor.get_number()
-        self.text = TextLabel(self, self.number)
+        self.text = VertexLabel(self, self.number)
 
 
 class ClearButton(QPushButton):
     def __init__(self, widget):
         super().__init__(widget)
-        self.visitor = None
+        self.settings = None
 
-    def set_visitor(self, visitor):
-        self.visitor = visitor
+    def set_visitor(self, settings):
+        self.settings = settings
 
     def mousePressEvent(self, e):
-        self.visitor.clear()
+        self.settings.clear()
 
 
 class BuildButton(QPushButton):
     def __init__(self, widget):
         super().__init__(widget)
-        self.visitor = None
+        self.settings = None
 
-    def set_visitor(self, visitor):
-        self.visitor = visitor
+    def set_settings(self, settings):
+        self.settings = settings
 
     def mousePressEvent(self, e):
         dialog = QtWidgets.QDialog()
-        ui_dialog = Ui_Dialog(self.visitor)
+        ui_dialog = UiDialog(self.settings)
         ui_dialog.set_type(False)
-        ui_dialog.setupUi(dialog)
+        ui_dialog.setup_ui(dialog)
         dialog.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
         dialog.exec_()
 
 
-class Visitor:
+class Settings:
     def __init__(self, frame):
         self._qp = None
         self.frame = frame
@@ -188,10 +188,10 @@ class Visitor:
             temp = [0] * 20
             self.weights.append(temp)
 
-    def setPainter(self, qp):
+    def set_painter(self, qp):
         self._qp = qp
 
-    def do(self, vertex):
+    def add_to_pressed(self, vertex):
         for i in range(len(self.pressed)):
             if self.pressed[i] == vertex:
                 self.pressed.pop(i)
@@ -210,7 +210,7 @@ class Visitor:
         self.create_window()
         self.edge_weights.append(edge_label)
         self.frame.update()
-        if self.is_square_root():
+        if self._is_square_root():
             edge_label.setText(str(int(math.sqrt(self.current_weight))))
         else:
             edge_label.setText("√" + str(self.current_weight))
@@ -219,23 +219,17 @@ class Visitor:
         self.weights[self.pressed[1].number][self.pressed[0].number] = sympy.sqrt(self.current_weight)
         self.pressed.clear()
 
-    def is_square_root(self):
+    def _is_square_root(self):
         current = int(math.sqrt(self.current_weight))
         return (current ** 2) == (math.sqrt(self.current_weight) ** 2)
 
     def create_window(self):
         dialog = QtWidgets.QDialog()
-        ui_dialog = Ui_Dialog(self)
+        ui_dialog = UiDialog(self)
         ui_dialog.set_type(True)
-        ui_dialog.setupUi(dialog)
+        ui_dialog.setup_ui(dialog)
         dialog.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
         dialog.exec_()
-
-    def get_weights(self):
-        return self.weights
-
-    def get_edges(self):
-        return self.edges
 
     def clear(self):
         for vertex in self.vertexes:
@@ -256,11 +250,11 @@ class Visitor:
         return self.number - 1
 
 
-class MyFrame(QFrame):
+class PaintingFrame(QFrame):
     def __init__(self, widget):
         super().__init__(widget)
         self._widget = widget
-        self.visitor = Visitor(self)
+        self.settings = Settings(self)
         self.setObjectName("frame")
         self.image = QImage(widget.size(), QImage.Format_RGB32)
         self.image.fill(Qt.white)
@@ -270,29 +264,30 @@ class MyFrame(QFrame):
         canvas_painter.drawImage(self.rect(), self.image, self.image.rect())
 
     def mousePressEvent(self, event):
-        label = Vertex(self, self.visitor)
+        label = Vertex(self, self.settings)
         label.set_location(event.x(), event.y())
         label.pos = event.pos()
-        self.visitor.vertexes.append(label)
-        self.visitor.edges.append([])
+        print(label.pos)
+        self.settings.vertexes.append(label)
+        self.settings.edges.append([])
 
     def clear(self):
         self.image.fill(Qt.white)
         self.update()
 
 
-class Ui_MainWindow(object):
-    def setupUi(self, MainWindow):
+class UiMainWindow(object):
+    def setup_ui(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(800, 600)
         MainWindow.setFixedSize(800, 600)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.pushButton = ClearButton(self.centralwidget)
-        self.pushButton.setGeometry(QtCore.QRect(650, 225, 121, 41))
+        self.pushButton.setGeometry(QtCore.QRect(635, 225, 161, 41))
         self.pushButton.setObjectName("pushButton")
         self.pushButton_2 = BuildButton(self.centralwidget)
-        self.pushButton_2.setGeometry(QtCore.QRect(650, 275, 121, 41))
+        self.pushButton_2.setGeometry(QtCore.QRect(635, 275, 161, 41))
         self.pushButton_2.setObjectName("pushButton_2")
         self.verticalFrame = QtWidgets.QFrame(self.centralwidget)
         self.verticalFrame.setGeometry(QtCore.QRect(10, 10, 631, 531))
@@ -300,9 +295,9 @@ class Ui_MainWindow(object):
         self.verticalFrame.setObjectName("verticalFrame")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalFrame)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.frame = MyFrame(self.verticalFrame)
-        self.pushButton.set_visitor(self.frame.visitor)
-        self.pushButton_2.set_visitor(self.frame.visitor)
+        self.frame = PaintingFrame(self.verticalFrame)
+        self.pushButton.set_visitor(self.frame.settings)
+        self.pushButton_2.set_settings(self.frame.settings)
         self.verticalLayout.addWidget(self.frame)
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -313,10 +308,10 @@ class Ui_MainWindow(object):
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
 
-        self.retranslateUi(MainWindow)
+        self._retranslate_ui(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-    def retranslateUi(self, MainWindow):
+    def _retranslate_ui(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Программа для построения многочлена"))
         self.pushButton.setText(_translate("MainWindow", "Очистить поле"))
@@ -328,7 +323,7 @@ if __name__ == "__main__":
 
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
+    ui = UiMainWindow()
+    ui.setup_ui(MainWindow)
     MainWindow.show()
     sys.exit(app.exec())

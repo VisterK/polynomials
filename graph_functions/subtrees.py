@@ -20,18 +20,7 @@ class SubtreesGetter:
         self.find_all_graphs(options)
         options.pop()
 
-    def get_subtrees(self):
-        subtrees = []
-        for option in self._possible_subtrees:
-            if self.check_if_subtree(option):
-                subtree = []
-                for i in range(self.size):
-                    if option[i]:
-                        subtree.append(i)
-                subtrees.append(subtree.copy())
-        return subtrees
-
-    def get_options(self):
+    def _get_options(self):
         options = []
         for option in self._possible_subtrees:
             if self.check_if_subtree(option):
@@ -40,33 +29,33 @@ class SubtreesGetter:
 
     def check_if_subtree(self, option):
         was = [False] * len(self._edges)
-        self.depth_first_search(self._start, option, was)
+        self._depth_first_search(self._start, option, was)
         for i in range(self.size):
             if was[i] != option[i]:
                 return False
         return True
 
-    def depth_first_search(self, vertex, option, was):
+    def _depth_first_search(self, vertex, option, was):
         was[vertex] = True
         for edge in self._edges[vertex]:
             if option[edge] and not was[edge]:
-                self.depth_first_search(edge, option, was)
+                self._depth_first_search(edge, option, was)
 
-    def depth_first_search_paths(self, current_node, prev_node, edges, array, new_array):
+    def _depth_first_search_paths(self, current_node, prev_node, edges, array, new_array):
         new_array.append(array.copy())
         for nodes in edges[current_node]:
             if nodes != prev_node:
                 array.append(nodes)
-                self.depth_first_search_paths(nodes, current_node, edges, array, new_array)
+                self._depth_first_search_paths(nodes, current_node, edges, array, new_array)
                 array.pop()
 
     def get_all_paths(self, start_node, edges):
         new_array = []
-        self.depth_first_search_paths(start_node, -1, edges, [start_node], new_array)
+        self._depth_first_search_paths(start_node, -1, edges, [start_node], new_array)
         return new_array
 
     def get(self):
-        return self.get_options()
+        return self._get_options()
 
     def get_new_edges_list(self, option):
         new_edges = []
